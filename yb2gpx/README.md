@@ -28,10 +28,10 @@ of the function
 Race.prototype.getAllPositions = function() 
 ```
 
-The copied the content of local variable i to the clipboard and then to the file allpositions.json
+Then copied the content of local variable i to the clipboard and then to the file allpositions.json
 
 
-##To create GPX file run
+## To create GPX file run
  
 ```bash
 python yb2gpx.py --positions=~/tmp/spin-cup/allpositions.json --setup=~/tmp/spin-cup/race-setup.json --gpx=~/tmp/spin-cup/spin2019-yb-tracks.gpx
