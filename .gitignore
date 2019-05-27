@@ -99,3 +99,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+\.idea/markdown-navigator\.xml
+
+\.idea/markdown-navigator/profiles_settings\.xml
+
+\.idea/workspace\.xml
