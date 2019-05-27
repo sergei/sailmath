@@ -5,7 +5,7 @@ converts data obtained from YB Tracking Race Viewer to GPX format
 ## How to get the YB data
 Answer I don't know any official way. 
 
-###This is how I got it:
+### This is how I got it:
 
 Get Race meta data:  
 ```bash
