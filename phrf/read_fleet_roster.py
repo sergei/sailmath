@@ -20,7 +20,7 @@ BALLAST = "Ballast"  # The ballast is specifically the weight of the keel and an
 DRAFT = "Draft"
 BEAM = "Beam"
 RIG_TYPE = "Rig Type"
-MAX_HD_SAIL = "Max Hdsail"
+MAX_HD_SAIL = "Max Hedsail"
 DW_RATING = "DW Rating"
 RATING = "Rating"
 SAIL_NO = "Sail #"
@@ -72,7 +72,6 @@ def read_fleet_roster(args):
 
         boat = {}
 
-        is_valid_boat = True
         if row_count == 0:
             break
         elif row_count == 4:
@@ -84,7 +83,6 @@ def read_fleet_roster(args):
             else:
                 boat_make = df.iloc[row_idx + 2, 0]
         else:  # Boat occupies one row
-            is_valid_boat = False
             row_idx += row_count
             continue
 
@@ -125,10 +123,7 @@ def read_fleet_roster(args):
             print(f'Warning: {boat_name} has no displacement')
         boat[BALLAST] = phrf_ballast
 
-
-
         as_yes_no_slu = df.iloc[row_idx + 2, 9]
-        has_asym = False
         if isinstance(as_yes_no_slu, str) and as_yes_no_slu.lower().startswith('yes'):
             t = as_yes_no_slu.split()
             if len(t) > 1:
@@ -149,21 +144,30 @@ def read_fleet_roster(args):
         boat[ASMG] = phrf_asmg
         boat[ASF] = phrf_asf
 
-        has_asym = not (np.isnan(phrf_slu) or np.isnan(phrf_sle) or np.isnan(phrf_asmg) or np.isnan(phrf_asf))
-        if is_valid_boat:
-            # Compute Displacement to Length ratio
-            boat[DLR] = (boat[DISPLACEMENT] / 2240) / ((boat[LWL] / 100) ** 3)
-            # Compute Sail Area to Displacement Ratio
-            sa_head = (boat[I] * boat[J]) / 2
-            sa_main = (boat[P] * boat[E]) / 2
-            sa_upwind = sa_head + sa_main
-            boat[SAD] = sa_upwind / (boat[DISPLACEMENT] / 64) ** 0.667
+        boat[DLR] = compute_dlr(boat)
+        boat[SAD] = compute_sad(boat)
 
-            boats.append(boat)
+        boats.append(boat)
 
         row_idx += row_count
 
     return boats
+
+
+def compute_sad(boat):
+    """ Computes Sail Area to Displacement Ratio
+    """
+    sa_head = (boat[I] * boat[J]) / 2
+    sa_main = (boat[P] * boat[E]) / 2
+    sa_upwind = sa_head + sa_main
+    sad = sa_upwind / (boat[DISPLACEMENT] / 64) ** 0.667
+    return sad
+
+
+def compute_dlr(boat):
+    """ Computes Displacement to Length ratio
+    """
+    return (boat[DISPLACEMENT] / 2240) / ((boat[LWL] / 100) ** 3)
 
 
 def store_csv(boats, csv_file_name):
@@ -187,21 +191,26 @@ def do_regression(boats):
     df = df.dropna(axis=0)
 
     rating = df['Rating']
-    features_list = [LWL, LOA]
+    features_list = [SAD, DLR]
 
     model_features = df[features_list]
     clf = LogisticRegression(random_state=0, solver='liblinear').fit(model_features, rating)
 
     # Now load our boat data
     df = pd.read_csv('data/sun_dragon.csv')
+    df[SAD] = compute_sad(df.to_dict(orient='records')[0])
+    df[DLR] = compute_dlr(df.to_dict(orient='records')[0])
+
     target_features = df[features_list]
 
     predicted_rating = clf.predict(target_features)
+    score = clf.score(model_features, rating)
 
-    print(f'Predicted rating for {df[BOAT_TYPE][0]} PHRF={predicted_rating[0]}')
     print('Parameters used in regression:')
     for feature in features_list:
         print(f'\t{feature}: {df[feature][0]}')
+    print(f'Predicted rating for {df[BOAT_TYPE][0]} PHRF={predicted_rating[0]}')
+    print(f'Score: {score}')
 
 
 if __name__ == '__main__':
